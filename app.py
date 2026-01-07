@@ -1,11 +1,11 @@
 # Flask imports - no monkey patching needed for threading mode
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory, abort
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import logging
 import os
 
-# Initialize Flask App
-app = Flask(__name__)
+# Initialize Flask App with static frontend folder
+app = Flask(__name__, static_folder='frontend', static_url_path='')
 app.config['SECRET_KEY'] = 'secret!'
 
 # Initialize SocketIO - auto-detect async mode
@@ -14,12 +14,28 @@ socketio = SocketIO(app, cors_allowed_origins="*", ping_timeout=60, ping_interva
 # Track rooms and their participants
 active_rooms = {}  # {room_code: {'senders': [sid1], 'receivers': [sid2]}}
 
-@app.route('/')
-def index():
+@app.route('/api/health')
+def health_check():
     return jsonify({
         "status": "online", 
         "message": "Secure Text Sync Backend is Running! (Room Support Enabled)"
     })
+
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    # Let Socket.IO endpoints pass through to the Socket.IO server
+    if path.startswith('socket.io'):
+        abort(404)
+
+    static_dir = app.static_folder
+    target_path = os.path.join(static_dir, path)
+
+    if path and os.path.exists(target_path):
+        return send_from_directory(static_dir, path)
+
+    return send_from_directory(static_dir, 'index.html')
 
 @socketio.on('connect')
 def handle_connect():
