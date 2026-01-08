@@ -115,10 +115,12 @@ def on_join(data):
     
     # Notify others in the room if room becomes active
     if room_active:
-        emit('room_status', {
+        payload = {
             'status': 'active',
             'message': 'Both sender and receiver connected'
-        }, to=room_code, skip_sid=sid)
+        }
+        socketio.emit('room_status', payload, to=room_code)
+        socketio.emit('room_status', payload, to=f"{room_code}_recv")
 
 @socketio.on('send_text')
 def handle_text(data):
