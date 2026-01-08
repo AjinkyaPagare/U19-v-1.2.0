@@ -75,7 +75,12 @@ def on_join(data):
     room_code = data.get('code')
     device_type = data.get('type')  # 'sender' or 'receiver'
     sid = request.sid
-    
+
+    if isinstance(room_code, str):
+        room_code = room_code.strip()
+    if isinstance(device_type, str):
+        device_type = device_type.strip().lower()
+
     if not room_code or not device_type:
         emit('error', {'message': 'Invalid room code or device type'})
         return
